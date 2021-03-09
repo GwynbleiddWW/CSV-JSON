@@ -2,6 +2,7 @@ package netology.ru;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -22,24 +23,25 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class Main {
+    private static InputStream is;
+
     public static void main(String[] args) throws Exception {
         String[] columnMapping = {"id", "firstName", "lastName", "country", "age"};
-
         String[] employee = ("1,John,Smith,USA,25").split(",");
         String[] employee1 = ("2,Ivan,Petrov,RU,23").split(",");
 
@@ -47,13 +49,26 @@ public class Main {
         createCSV(fileName, employee, employee1);
         List<Employee> list = parseCSV(columnMapping, fileName);
         createJSON("data.json", list);
-
-        List<Employee> list2 = parseXML("data.xml");
+        //List<Employee> list2 = parseXML("data.xml");
+        List<Employee> list1 = xmlToList("data.xml");
         String json = readString("data.json");
         jsonToList(json);
-
         createXML("data.xml");
-        System.out.println(list2);
+        createJSON("data2.json", list1);
+    }
+
+    private static List<Employee> xmlToList(String xmlName) throws IOException, XMLStreamException {
+        XmlMapper xmlMapper = new XmlMapper();
+        XMLInputFactory xmlInputFactory = XMLInputFactory.newFactory();
+        XMLStreamReader xmlStreamReader = xmlInputFactory.createXMLStreamReader(new FileInputStream(xmlName));
+        xmlStreamReader.next();
+        xmlStreamReader.next();
+        Employee employee = xmlMapper.readValue(xmlStreamReader, Employee.class);
+        Employee employee1 = xmlMapper.readValue(xmlStreamReader, Employee.class);
+        xmlStreamReader.close();
+        List<Employee> employeeList = Arrays.asList(employee,employee1);
+        System.out.println("\nXML to List <Employee> and creating data2.json further(Task 2)\n" + employeeList);
+        return employeeList;
     }
 
     private static void jsonToList(String jsonName) {
@@ -174,11 +189,11 @@ public class Main {
                     for (int j = 0; j < elementProps.getLength(); j++) {
                         Element elementProp = (Element) elementProps.item(j);
                         System.out.println(elementProp.getNodeName() + ": " + elementProp.getChildNodes().item(0).getTextContent());
-                        employeeList = new ArrayList<>();
                     }
                 }
             }
         }
+        employeeList = new ArrayList<>();
         return employeeList;
     }
 
