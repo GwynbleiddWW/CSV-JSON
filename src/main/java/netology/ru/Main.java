@@ -14,16 +14,14 @@ import com.opencsv.bean.CsvToBeanBuilder;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.Transformer;
@@ -38,7 +36,12 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Main {
-    private static InputStream is;
+
+    private static boolean bId;
+    private static boolean bFirstName;
+    private static boolean bLastName;
+    private static boolean bCountry;
+    private static boolean bAge;
 
     public static void main(String[] args) throws Exception {
         String[] columnMapping = {"id", "firstName", "lastName", "country", "age"};
@@ -49,24 +52,86 @@ public class Main {
         createCSV(fileName, employee, employee1);
         List<Employee> list = parseCSV(columnMapping, fileName);
         createJSON("data.json", list);
-        //List<Employee> list2 = parseXML("data.xml");
         List<Employee> list1 = xmlToList("data.xml");
         String json = readString("data.json");
         jsonToList(json);
         createXML("data.xml");
         createJSON("data2.json", list1);
+
+        List<Employee>list3 = xmlToList2("data.xml");
+        System.out.println(list3);
+        createJSON("data3.json", list3);
+    }
+
+    private static List<Employee> xmlToList2(String fileName) {
+        System.out.println("\nМетод, добавляющий в список любое количество работников: ");
+        List<Employee> empList = new ArrayList<>();
+        Employee emp = null;
+        XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
+        try {
+            XMLStreamReader xmlStreamReader = xmlInputFactory
+                    .createXMLStreamReader(new FileInputStream(fileName));
+            int event = xmlStreamReader.getEventType();
+            while (true) {
+                switch (event) {
+                    case XMLStreamConstants.START_ELEMENT:
+                        switch (xmlStreamReader.getLocalName()) {
+                            case "employee" -> emp = new Employee();
+                            case "id" -> bId = true;
+                            case "firstName" -> bFirstName = true;
+                            case "lastName" -> bLastName = true;
+                            case "country" -> bCountry = true;
+                            case "age" -> bAge = true;
+                        }
+                        break;
+                    case XMLStreamConstants.CHARACTERS:
+                        assert emp != null;
+                        if (bId) {
+                            emp.setId(Long.parseLong(xmlStreamReader.getText()));
+                            bId = false;
+                        } else if (bFirstName) {
+                            emp.setFirstName(xmlStreamReader.getText());
+                            bFirstName = false;
+                        } else if (bLastName) {
+                            emp.setLastName(xmlStreamReader.getText());
+                            bLastName = false;
+                        } else if (bCountry) {
+                            emp.setCountry(xmlStreamReader.getText());
+                            bCountry = false;
+                        }
+                        else if (bAge) {
+                            emp.setAge(Integer.parseInt(xmlStreamReader.getText()));
+                            bAge = false;
+                        }
+                        break;
+                    case XMLStreamConstants.END_ELEMENT:
+                        if (xmlStreamReader.getLocalName().equals("employee")) {
+                            empList.add(emp);
+                        }
+                        break;
+                }
+                if (!xmlStreamReader.hasNext())
+                    break;
+
+                event = xmlStreamReader.next();
+            }
+
+        } catch (FileNotFoundException | XMLStreamException e) {
+            e.printStackTrace();
+        }
+        return empList;
     }
 
     private static List<Employee> xmlToList(String xmlName) throws IOException, XMLStreamException {
         XmlMapper xmlMapper = new XmlMapper();
         XMLInputFactory xmlInputFactory = XMLInputFactory.newFactory();
-        XMLStreamReader xmlStreamReader = xmlInputFactory.createXMLStreamReader(new FileInputStream(xmlName));
-        xmlStreamReader.next();
-        xmlStreamReader.next();
-        Employee employee = xmlMapper.readValue(xmlStreamReader, Employee.class);
-        Employee employee1 = xmlMapper.readValue(xmlStreamReader, Employee.class);
-        xmlStreamReader.close();
-        List<Employee> employeeList = Arrays.asList(employee,employee1);
+        XMLStreamReader reader = xmlInputFactory.createXMLStreamReader(new FileInputStream(xmlName));
+        reader.next();
+        reader.next();
+        Employee employee = xmlMapper.readValue(reader, Employee.class);
+        Employee employee1 = xmlMapper.readValue(reader, Employee.class);
+        reader.close();
+        List<Employee> employeeList = Arrays.asList(employee, employee1);
         System.out.println("\nXML to List <Employee> and creating data2.json further(Task 2)\n" + employeeList);
         return employeeList;
     }
@@ -169,32 +234,6 @@ public class Main {
             e.printStackTrace();
         }
         return json;
-    }
-
-    private static List<Employee> parseXML(String file) throws ParserConfigurationException, IOException, SAXException {
-        System.out.println("\nReading XML and output in the console (Task 2 not completely)");
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(new File(file));
-        Node root = doc.getDocumentElement();
-        NodeList nodeList = root.getChildNodes();
-        System.out.println("Root: " + root.getNodeName());
-        List<Employee> employeeList = null;
-        for (int i = 0; i < nodeList.getLength(); i++) {
-            Element node = (Element) nodeList.item(i);
-            if (Node.ELEMENT_NODE == node.getNodeType()) {
-                System.out.println("Current: " + node.getNodeName());
-                if (node.getNodeType() != Node.TEXT_NODE) {
-                    NodeList elementProps = node.getChildNodes();
-                    for (int j = 0; j < elementProps.getLength(); j++) {
-                        Element elementProp = (Element) elementProps.item(j);
-                        System.out.println(elementProp.getNodeName() + ": " + elementProp.getChildNodes().item(0).getTextContent());
-                    }
-                }
-            }
-        }
-        employeeList = new ArrayList<>();
-        return employeeList;
     }
 
     private static List<Employee> parseCSV(String[] choice, String name) {
