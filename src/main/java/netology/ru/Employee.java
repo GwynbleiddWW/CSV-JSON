@@ -1,6 +1,5 @@
 package netology.ru;
 
-
 public class Employee {
     public long id;
     public String firstName;

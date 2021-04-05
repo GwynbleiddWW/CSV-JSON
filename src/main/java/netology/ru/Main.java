@@ -2,7 +2,6 @@ package netology.ru;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -15,7 +14,6 @@ import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.w3c.dom.*;
-import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -52,25 +50,24 @@ public class Main {
         createCSV(fileName, employee, employee1);
         List<Employee> list = parseCSV(columnMapping, fileName);
         createJSON("data.json", list);
-        List<Employee> list1 = xmlToList("data.xml");
+
         String json = readString("data.json");
         jsonToList(json);
         createXML("data.xml");
-        createJSON("data2.json", list1);
 
-        List<Employee>list3 = xmlToList2("data.xml");
-        System.out.println(list3);
-        createJSON("data3.json", list3);
+        List<Employee>listFromXML = xmlToList("data.xml");
+        System.out.println(listFromXML);
+        createJSON("data2.json", listFromXML);
     }
 
-    private static List<Employee> xmlToList2(String fileName) {
+    private static List<Employee> xmlToList(String fileNameXml) {
         System.out.println("\nМетод, добавляющий в список любое количество работников: ");
         List<Employee> empList = new ArrayList<>();
         Employee emp = null;
         XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
         try {
             XMLStreamReader xmlStreamReader = xmlInputFactory
-                    .createXMLStreamReader(new FileInputStream(fileName));
+                    .createXMLStreamReader(new FileInputStream(fileNameXml));
             int event = xmlStreamReader.getEventType();
             while (true) {
                 switch (event) {
@@ -120,20 +117,6 @@ public class Main {
             e.printStackTrace();
         }
         return empList;
-    }
-
-    private static List<Employee> xmlToList(String xmlName) throws IOException, XMLStreamException {
-        XmlMapper xmlMapper = new XmlMapper();
-        XMLInputFactory xmlInputFactory = XMLInputFactory.newFactory();
-        XMLStreamReader reader = xmlInputFactory.createXMLStreamReader(new FileInputStream(xmlName));
-        reader.next();
-        reader.next();
-        Employee employee = xmlMapper.readValue(reader, Employee.class);
-        Employee employee1 = xmlMapper.readValue(reader, Employee.class);
-        reader.close();
-        List<Employee> employeeList = Arrays.asList(employee, employee1);
-        System.out.println("\nXML to List <Employee> and creating data2.json further(Task 2)\n" + employeeList);
-        return employeeList;
     }
 
     private static void jsonToList(String jsonName) {
